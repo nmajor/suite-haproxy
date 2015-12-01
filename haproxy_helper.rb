@@ -157,7 +157,7 @@ end
 class Request
   attr_accessor :path, :method
 
-  CONSUL = '72.2.119.75'
+  CONSUL = 'consul'
 
   def initialize path, method: 'get'
     @path ||= path
@@ -271,7 +271,7 @@ EOT
 
   def frontend_service_text service
 <<EOT
-\tacl acl_name(service) hdr(host) -i #{service.host}
+\tacl #{acl_name(service)} hdr(host) -i #{service.host}
 \tuse_backend #{backend_name(service)} if acl_name(service)
 EOT
   end
