@@ -20,10 +20,11 @@ WORKDIR /root
 RUN mkdir -p /run/haproxy
 RUN mkdir -p /var/lib/haproxy
 
-ENV HAPROXY_CONFIG /usr/local/etc/haproxy/haproxy.cfg
+ENV HAPROXY_CONFIG /etc/haproxy/haproxy.cfg
 
 # Copy the stuff
 COPY errors /etc/haproxy/errors
+RUN rm $HAPROXY_CONFIG
 COPY haproxy.cfg $HAPROXY_CONFIG
 COPY haproxy_helper.rb /sbin/haproxy_helper
 
