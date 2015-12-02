@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# runit haproxy
+#
+
+# forward stderr to stdout for use with runit svlogd
+exec 2>&1
+
+PID_PATH=/var/run/haproxy/haproxy.pid
+BIN_PATH=/usr/sbin/haproxy
+CFG_PATH=$HAPROXY_CONFIG
+
+exec /bin/bash <<EOF
+$BIN_PATH -f $CFG_PATH -D -p $PID_PATH
+
+trap "echo SIGHUP caught; $BIN_PATH -f $CFG_PATH -D -p $PID_PATH -sf \\\$(cat $PID_PATH)" SIGHUP
+trap "echo SIGTERM caught; kill -TERM \\\$(cat $PID_PATH) && exit 0" SIGTERM SIGINT
+
+while true; do # Iterate to keep job running.
+  sleep 1 # Wake up to handle signals
+done
+EOF
