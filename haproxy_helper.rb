@@ -1,4 +1,4 @@
-#!/usr/local/bin/ruby
+#!/usr/bin/ruby
 
 require 'net/http'
 require 'json'
@@ -190,7 +190,7 @@ class Request
 end
 
 class HAProxy
-  CONFIG = ENV["HAPROXY_CONFIG"]
+  CONFIG = '/etc/haproxy/haproxy.cfg'
 
   attr_accessor :list, :old_config
   alias_method :service_list, :list
@@ -209,7 +209,7 @@ class HAProxy
       File.open(config_file, "w") do |file|
          file.write(config_text)
       end
-      # restart
+      restart
     end
   end
 
@@ -228,28 +228,27 @@ frontend http-in
 #{ service_list.map{|service| frontend_service_text(service) }.join }
 
 #{ service_list.map{|service| backend_service_text(service) }.join }
+
+listen stats :1936
+\tmode http
+\tstats enable
+\tstats hide-version
+\tstats realm Haproxy\ Statistics
+\tstats uri /
+\tstats auth nike:#{ENV["HAPROXY_STATS_PASS"]}
 EOT
   end
 
    def default_config
 <<EOT
 global
-\tlog /dev/log    local0
-\tlog /dev/log    local1 notice
+\tlog 127.0.0.1 local0 notice
 \tchroot /var/lib/haproxy
 \tstats socket /run/haproxy/admin.sock mode 660 level admin
 \tstats timeout 30s
 \tuser haproxy
 \tgroup haproxy
 \tdaemon
-
-\t# Default SSL material locations
-\tca-base /etc/ssl/certs
-\tcrt-base /etc/ssl/private
-
-\t# Default ciphers to use on SSL-enabled listening sockets.
-\t# For more information, see ciphers(1SSL).
-\tssl-default-bind-ciphers kEECDH+aRSA+AES:kRSA+AES:+AES256:RC4-SHA:!kEDH:!LOW:!EXP:!MD5:!aNULL:!eNULL
 
 defaults
 \tlog     global
@@ -259,20 +258,21 @@ defaults
 \ttimeout connect 5000
 \ttimeout client  50000
 \ttimeout server  50000
-\terrorfile 400 /etc/haproxy/errors/400.http
-\terrorfile 403 /etc/haproxy/errors/403.http
-\terrorfile 408 /etc/haproxy/errors/408.http
-\terrorfile 500 /etc/haproxy/errors/500.http
-\terrorfile 502 /etc/haproxy/errors/502.http
-\terrorfile 503 /etc/haproxy/errors/503.http
-\terrorfile 504 /etc/haproxy/errors/504.http
+\t# errorfile 400 /etc/haproxy/errors/400.http
+\t# errorfile 403 /etc/haproxy/errors/403.http
+\t# errorfile 408 /etc/haproxy/errors/408.http
+\t# errorfile 500 /etc/haproxy/errors/500.http
+\t# errorfile 502 /etc/haproxy/errors/502.http
+\t# errorfile 503 /etc/haproxy/errors/503.http
+\t# errorfile 504 /etc/haproxy/errors/504.http
+
 EOT
   end
 
   def frontend_service_text service
 <<EOT
 \tacl #{acl_name(service)} hdr(host) -i #{service.host}
-\tuse_backend #{backend_name(service)} if acl_name(service)
+\tuse_backend #{backend_name(service)} if #{acl_name(service)}
 EOT
   end
 
@@ -282,8 +282,6 @@ backend #{backend_name(service)}
 \tmode http
 \tbalance roundrobin
 \toption forwardfor
-\thttp-request set-header X-Forwarded-Port %[dst_port]
-\thttp-request add-header X-Forwarded-Proto https if { ssl_fc }
 \toption httpchk HEAD / HTTP/1.1\\r\\nHost:localhost
 #{ service.healthy_nodes.map{|n| server_text(n) }.join }
 EOT

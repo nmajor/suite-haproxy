@@ -1,9 +1,8 @@
 FROM phusion/baseimage:latest
 
-RUN add-apt-repository ppa:vbernat/haproxy-1.5
 RUN apt-get update
-RUN apt-get -y dist-upgrade
 RUN apt-get -y install haproxy
+RUN sed -i "s/ENABLED=0/ENABLED=1/" /etc/default/haproxy
 
 # Install Ruby
 RUN apt-get -y --force-yes install gcc make
@@ -30,6 +29,9 @@ COPY haproxy_helper.rb /sbin/haproxy_helper
 
 RUN mkdir /etc/service/haproxy
 ADD haproxy.runit /etc/service/haproxy/run
+
+RUN (crontab -l 2>/dev/null; echo "* * * * * haproxy_helper refresh_config") | crontab -
+RUN (crontab -l 2>/dev/null; echo "*/5 * * * * haproxy_helper deregister_nodes") | crontab -
 
 # Use baseimage-docker's init system.
 CMD ["/sbin/my_init"]
