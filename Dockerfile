@@ -28,7 +28,6 @@ COPY haproxy.cfg $HAPROXY_CONFIG
 COPY haproxy_helper.rb /sbin/haproxy_helper
 
 RUN mkdir /etc/service/haproxy
-ADD haproxy.runit /etc/service/haproxy/run
 
 RUN (crontab -l 2>/dev/null; echo "* * * * * haproxy_helper refresh_config") | crontab -
 RUN (crontab -l 2>/dev/null; echo "*/5 * * * * haproxy_helper deregister_nodes") | crontab -
