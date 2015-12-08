@@ -235,7 +235,7 @@ listen stats :1936
 \tstats hide-version
 \tstats realm Haproxy\ Statistics
 \tstats uri /
-\tstats auth nike:#{ENV["HAPROXY_STATS_PASS"]}
+\tstats auth #{ENV["HAPROXY_STATS_USER"]}:#{ENV["HAPROXY_STATS_PASS"]}
 EOT
   end
 

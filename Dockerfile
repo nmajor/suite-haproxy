@@ -15,7 +15,6 @@ RUN make
 RUN make install
 WORKDIR /root
 
-# These directories seem to be required
 RUN mkdir -p /run/haproxy
 RUN mkdir -p /var/lib/haproxy
 
